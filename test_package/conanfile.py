@@ -5,7 +5,7 @@ import sys
 
 class Pybind11TestConan(ConanFile):
     settings = "os", "compiler", "build_type", "arch"
-    generators = "cmake"
+    generators = "cmake_find_package"
 
     def build(self):
         cmake = CMake(self)

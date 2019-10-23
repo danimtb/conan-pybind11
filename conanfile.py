@@ -1,3 +1,4 @@
+import os
 from conans import ConanFile, tools, CMake
 
 
@@ -14,15 +15,32 @@ class PyBind11Conan(ConanFile):
     def source(self):
         tools.get("%s/archive/v%s.tar.gz" % (self.homepage, self.version))
 
-    def build(self):
+    def _configure_cmake(self):
         cmake = CMake(self)
         cmake.definitions["PYBIND11_TEST"] = False
         cmake.configure(source_folder="pybind11-%s" % self.version)
+        return cmake
+
+    def build(self):
+        cmake = self._configure_cmake()
         cmake.build()
-        cmake.install()
 
     def package(self):
+        cmake = self._configure_cmake()
+        cmake.install()
         self.copy("*LICENSE", keep_path=False)
-  
+        os.unlink(os.path.join(self.package_folder, "share", "cmake", "pybind11", "pybind11Config.cmake"))
+        os.unlink(os.path.join(self.package_folder, "share", "cmake", "pybind11", "pybind11ConfigVersion.cmake"))
+        pybind11tools_path = os.path.join(self.package_folder, "share", "cmake", "pybind11", "pybind11Tools.cmake")
+        tools.replace_in_file(pybind11tools_path, "PYBIND11_INCLUDE_DIR", "pybind11_INCLUDE_DIRS")
+
+    def package_info(self):
+        base_path = os.path.join("share", "cmake", "pybind11")
+        self.cpp_info.builddirs = [base_path]
+        self.cpp_info.build_modules = [
+            os.path.join(base_path, "pybind11Tools.cmake"),
+            os.path.join(base_path, "FindPythonLibsNew.cmake")
+        ]
+
     def package_id(self):
         self.info.header_only()
